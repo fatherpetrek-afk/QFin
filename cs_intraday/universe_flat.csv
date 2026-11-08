@@ -1,0 +1,100 @@
+symbol,name,sector
+O,Realty Income,Real Estate
+SPG,Simon Property Group,Real Estate
+PSA,Public Storage,Real Estate
+WELL,Welltower,Real Estate
+DLR,Digital Realty,Real Estate
+EQR,Equity Residential,Real Estate
+AVB,AvalonBay Communities,Real Estate
+VTR,Ventas,Real Estate
+ARE,Alexandria Real Estate Equities,Real Estate
+BXP,BXP Inc.,Real Estate
+KIM,Kimco Realty,Real Estate
+REG,Regency Centers,Real Estate
+HST,Host Hotels & Resorts,Real Estate
+FRT,Federal Realty Investment Trust,Real Estate
+ESS,Essex Property Trust,Real Estate
+MAA,Mid-America Apartment Communities,Real Estate
+LYB,LyondellBasell,Materials
+CE,Celanese,Materials
+EMN,Eastman Chemical,Materials
+IFF,International Flavors & Fragrances,Materials
+PPG,PPG Industries,Materials
+NUE,Nucor,Materials
+STLD,Steel Dynamics,Materials
+FCX,Freeport-McMoRan,Materials
+NEM,Newmont,Materials
+MOS,Mosaic,Materials
+CF,CF Industries,Materials
+ALB,Albemarle,Materials
+IP,International Paper,Materials
+PKG,Packaging Corporation of America,Materials
+AVY,Avery Dennison,Materials
+AEP,American Electric Power,Utilities
+D,Dominion Energy,Utilities
+EXC,Exelon,Utilities
+XEL,Xcel Energy,Utilities
+ED,Consolidated Edison,Utilities
+PEG,Public Service Enterprise Group,Utilities
+WEC,WEC Energy Group,Utilities
+ES,Eversource Energy,Utilities
+EIX,Edison International,Utilities
+DTE,DTE Energy,Utilities
+PPL,PPL Corporation,Utilities
+FE,FirstEnergy,Utilities
+AEE,Ameren,Utilities
+ETR,Entergy,Utilities
+CMS,CMS Energy,Utilities
+EOG,EOG Resources,Energy
+SLB,Schlumberger,Energy
+PSX,Phillips 66,Energy
+MPC,Marathon Petroleum,Energy
+VLO,Valero Energy,Energy
+OXY,Occidental Petroleum,Energy
+DVN,Devon Energy,Energy
+HAL,Halliburton,Energy
+BKR,Baker Hughes,Energy
+FANG,Diamondback Energy,Energy
+WMB,Williams Companies,Energy
+APA,APA Corporation,Energy
+OKE,Oneok,Energy
+PNC,PNC Financial Services,Financials
+TFC,Truist Financial,Financials
+FITB,Fifth Third Bancorp,Financials
+KEY,KeyCorp,Financials
+RF,Regions Financial,Financials
+HBAN,Huntington Bancshares,Financials
+CFG,Citizens Financial Group,Financials
+MTB,M&T Bank,Financials
+ZION,Zions Bancorporation,Financials
+NTRS,Northern Trust,Financials
+STT,State Street,Financials
+TROW,T. Rowe Price,Financials
+BEN,Franklin Resources,Financials
+IVZ,Invesco,Financials
+GIS,General Mills,Consumer Staples
+KHC,Kraft Heinz,Consumer Staples
+CAG,Conagra Brands,Consumer Staples
+CPB,Campbell's Company,Consumer Staples
+SJM,J.M. Smucker,Consumer Staples
+HSY,Hershey Company,Consumer Staples
+KMB,Kimberly-Clark,Consumer Staples
+CLX,Clorox,Consumer Staples
+CHD,Church & Dwight,Consumer Staples
+MKC,McCormick & Company,Consumer Staples
+HRL,Hormel Foods,Consumer Staples
+TSN,Tyson Foods,Consumer Staples
+ADM,Archer Daniels Midland,Consumer Staples
+KR,Kroger,Consumer Staples
+APD,Air Products and Chemicals,Materials
+TGT,Target Corporation,Consumer Staples
+EL,Estee Lauder,Consumer Staples
+DG,Dollar General,Consumer Staples
+DLTR,Dollar Tree,Consumer Staples
+HUM,Humana Inc.,Health Care
+BIIB,Biogen Inc.,Health Care
+ILMN,Illumina Inc.,Health Care
+BDX,Becton Dickinson,Health Care
+ZBH,Zimmer Biomet,Health Care
+TFX,Teleflex Inc.,Health Care
+CHTR,Charter Communications,Communication Services

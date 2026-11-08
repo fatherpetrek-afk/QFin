@@ -1,0 +1,2 @@
+ex_div_date,split_base,split_ert,join_base,join_ert,split_ratio,per_cash_div,special_dividend,bonus_base,bonus_ert,per_share_div_ratio,transfer_base,transfer_ert,per_share_trans_ratio,allot_base,allot_ert,allotment_ratio,allotment_price,add_base,add_ert,stk_spo_ratio,stk_spo_price,spin_off_base,spin_off_ert,spin_off_ratio,forward_adj_factorA,forward_adj_factorB,backward_adj_factorA,backward_adj_factorB
+2000-08-22,1,2,,,0.5,,,,,,,,,,,,,,,,,,,,0.5,0.0,2.0,0.0

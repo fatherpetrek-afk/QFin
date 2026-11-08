@@ -1,0 +1,9 @@
+numpy
+pandas
+pyarrow
+matplotlib
+scikit-learn
+scipy
+
+# Only needed to download bars again. The parquets in this repo are already fetched.
+# futu-api
