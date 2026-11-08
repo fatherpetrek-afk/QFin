@@ -18,6 +18,8 @@ cs_intraday/*
 !cs_intraday/cs_f7state_v1.py
 !cs_intraday/cs_fw_test_v1.py
 !cs_intraday/cs_band_v1.py
+!cs_intraday/cs_chain_v1.py
+!cs_intraday/cs_sector_v1.py
 !cs_intraday/cs_gmm_v1.py
 !cs_intraday/cs_hiprice_v1.py
 !cs_intraday/cs_improve_v1.py
@@ -44,6 +46,8 @@ cs_intraday/*
 !cs_intraday/cs_fw_test_v1_out/**
 !cs_intraday/cs_band_v1_out/
 !cs_intraday/cs_band_v1_out/**
+!cs_intraday/cs_sector_v1_out/
+!cs_intraday/cs_sector_v1_out/**
 !cs_intraday/data/
 !cs_intraday/data/**
 

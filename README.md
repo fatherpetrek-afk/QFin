@@ -130,9 +130,46 @@ The null keeps the fitted scores and reassigns them, at that bar, to other names
 | Financials, energy, industrials, 57 names | +0.01%/yr | 0.30 | −1.39%/yr | 0.91 |
 | Technology, communication, discretionary, 40 names | +3.25%/yr | 0.012 | +5.30%/yr | 0.012 |
 
-The rank signal is present in all three. Mean daily rank correlation of the fitted mix with the residual to the close is +0.032, +0.042 and +0.044. Cross-sectional residual dispersion is about the same. The financials pool fails later in the rule: only 56% of financial and energy names clear $P \ge 60$, the 4.2 cost gate passes on 2.8% of name-rows (16.9% in the technology pool, where the median real price is about 230 dollars and the round trip is 0.7 bp), and a sector book exists on only 45% of hours. Gross profit on that pool is already about zero, so the cost is not what removes an otherwise positive book. The non-bull sectors stay thick enough to fill both legs. The technology pool clears the gate often because its round trip is a smaller fraction of price. Figure: `cs_intraday/cs_band_v1_out/cs_band.png`.
+Figure: `cs_intraday/cs_band_v1_out/cs_band.png`.
 
-Shuffling which names are in the fast half, or shuffling the sector labels, does not remove the non-bull train result. The since-close relative gap and the cost gate are the parts that the book uses. The fast/slow label is not a separate source of profit.
+## Empirical account
+
+The checks pin the profit to one object. They do not pin it to a sector label that can be taken to the next book and still show up on a fresh validation window.
+
+1. The position is paid for the same-day relative gap. On the non-bull panel the fitted mix has mean daily rank correlation $+0.034$ with the residual to the close on the train days ($t = 9.8$, 1034 days) and $+0.023$ on the validation days ($t = 2.5$, 200 days). Flipping the sign of the score turns the train result to $-6.3\%/\mathrm{yr}$ with a worst drop of $-25\%$. Reassigning the score inside the sector, as in the null above, puts the book back in the middle of the cloud.
+
+2. The fast-half label and the sector names are not a separate source of profit. Rebuilding the fast half at random and refitting leaves the non-bull train result in place (about $1.89$ bp/day against $1.91$ bp/day, train $p = 0.46$). Permuting the sector codes does the same. An equal-weight peer, with no fast half, has a train result of $+6.3\%/\mathrm{yr}$, which is not worse.
+
+3. A typical forecast is smaller than the hurdle, so the gate is a price filter. Median $|\mu|$ divided by the round trip is $0.55\times$ on the non-bull names, $0.52\times$ on financials, energy and industrials, and $1.27\times$ on technology, communication and discretionary. The gate asks for $4.2\times$. The round trip itself is $0.017 / P$, so the same forecast in return units clears a stock near 230 dollars far more often than a stock near 70 dollars. The share of name-rows that pass is $5.0\%$, $2.8\%$ and $16.9\%$. Rank correlation of the score with the next-hour raw return is about $+0.016$ in all three pools. The pools separate at the gate, not at this correlation.
+
+4. Inside a pool, only sectors that are expensive enough and do not move as one block actually form both legs. Co-movement is the mean absolute correlation of next-hour returns inside the sector. Gross is the sector's own long-short return on hours when both legs exist, before cost.
+
+| Sector | Median price | Co-movement | Hours with both legs | Gross when on |
+| --- | ---: | ---: | ---: | ---: |
+| Health Care | 177 dollars | 0.36 | 51% | +1.60 bp |
+| Consumer Staples | 91 | 0.40 | 11% | +1.42 bp |
+| Real Estate | 106 | 0.56 | 6% | +1.06 bp |
+| Materials | 106 | 0.44 | 12% | −0.22 bp |
+| Utilities | 74 | 0.69 | almost none | — |
+| Information Technology | 183 | 0.54 | 55% | +0.63 bp |
+| Communication Services | 145 | 0.40 | 36% | +0.63 bp |
+| Consumer Discretionary | 241 | 0.45 | 40% | −0.52 bp |
+| Financials | 75 | 0.62 | 11% | +0.42 bp |
+| Industrials | 206 | 0.44 | 15% | −0.19 bp |
+| Energy | 66 | 0.68 | almost none | — |
+
+Health Care is the piece of the non-bull book that is on about half the hours. Utilities and Energy clear the price floor often enough and still do not trade: the names move together, so the relative gap stays under a hurdle of several basis points.
+
+5. That description of who can trade does not travel to a new sector's validation window. The same full-panel fit, with the book then restricted to one sector and the gate left at 4.2, gives:
+
+| Sector alone | Train | Train $p$ | Validation | Validation $p$ |
+| --- | ---: | ---: | ---: | ---: |
+| Information Technology, 22 names | +2.65%/yr | 0.012 | +0.22%/yr | 0.46 |
+| Financials, 29 names | −0.01%/yr | 0.49 | +0.17%/yr | 0.27 |
+
+Information Technology is active on 75% of hours and clears the train cloud. Its validation result sits in the middle of the reassignment cloud. Financials is active on 31% of hours and clears neither window. Figure: `cs_intraday/cs_sector_v1_out/cs_sector.png`.
+
+The account that the checks support is therefore the relative gap on the day, kept only when $|\mu|$ clears $\lambda$ times the round trip. Price and co-movement explain which sectors get through that gate. They are not a rule for which new sector will still pay on the next validation window.
 
 ## Data
 
@@ -162,6 +199,8 @@ cd cs_intraday
 python cs_ac_v1.py
 python cs_fw_test_v1.py
 python cs_band_v1.py
+python cs_chain_v1.py
+python cs_sector_v1.py
 ```
 
 Each script rewrites its figure and `metrics.json` under the matching `*_out` directory. OpenD is required only to download bars again.
@@ -169,3 +208,4 @@ Each script rewrites its figure and `metrics.json` under the matching `*_out` di
 - `cs_intraday/cs_ac_v1_out/cs_ac.png` — equity of the non-bull pool and of the full 194-name panel
 - `cs_intraday/cs_fw_test_v1_out/cs_fw_test.png` — coordinates, anchor, lag, and sign, at the same gate
 - `cs_intraday/cs_band_v1_out/cs_band.png` — the reassignment cloud on the three pools
+- `cs_intraday/cs_sector_v1_out/cs_sector.png` — Information Technology alone against Financials alone
