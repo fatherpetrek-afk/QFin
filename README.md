@@ -1,83 +1,171 @@
 # QFin
 
-5 分钟 K 线上的截面策略。先去掉当天已知的公共因子，再在每个板块内部做多跌得多的、做空涨得多的，收盘前平仓。多空金额相等，所以大盘本身涨跌不会直接变成利润。
+Cross-sectional book on 5-minute bars. A factor model known before the bar removes the common move. Inside each sector the book buys the names that have fallen furthest relative to their peers and shorts the names that have risen furthest. Both sides have the same dollars, sectors have the same dollars, and the book is flat by the close. The market's own drift is not the position.
 
-仓库里是最后这条规则、它依赖的代码、两张结果图，以及跑出这些数字用的行情。更早的试验脚本没有放上来。
+This repository is the rule below, the code it imports, the figures, and the bars used to compute them. Bars after the validation cut are not used in the reported numbers. This is a research record, not an order.
 
-研究记录，不是下单建议。2025-12-03 10:30 之后的测试段没有拿来出下面的数字。
+## Rule
 
-## 结果
+### Residual
 
-非牛市池 97 只：必需消费、医疗、房地产、材料、公用事业。真实价格至少 $60，成本门槛 4.2 倍来回成本。
+For name \(i\) at bar \(t\),
 
-| | 年化 | 最大回撤 | 夏普 |
-| --- | ---: | ---: | ---: |
-| 训练，2021 至 2025-02-14 | +4.88% | −1.96% | 1.52 |
-| 验证，2025-02-14 至 2025-12-03 | +4.30% | −1.06% | 1.61 |
-| 两段合在一起 | +4.78% | −1.96% | 1.53 |
+$$
+r_{i,t} = B_{i}^{\top} f_{t} + \varepsilon_{i,t}.
+$$
 
-同一池子、门槛放宽到 2.0 倍时，验证是 −4.57%/年。把分数正负对调，训练变成 −6.28%/年，回撤 −24.8%。改用昨天同一小时的分数，训练只剩 +1.93%/年，回撤 −7.0%。
+\(B_{i} \in \mathbb{R}^{K}\) is fixed through the day. It is the top \(K = 3\) eigenvectors of the correlation of 5-minute returns over the previous quarter (63 trading days), scaled back from correlation units to return units, with sign aligned to the previous estimate. Names with too few bars in that window get a zero loading and do not enter the correlation. The factor at the bar is the cross-sectional projection on the names that actually print,
 
-全池 194 只、真实价格至少 $100、门槛 3.4 倍：训练 +5.48%/年，回撤 −2.58%；验证 +7.75%，回撤 −2.60%。
+$$
+f_{t} = (B^{\top} B)^{-1} B^{\top} r_{t}, \qquad \varepsilon_{t} = r_{t} - B f_{t}.
+$$
 
-图：
+### Four horizons
 
-- `cs_intraday/cs_ac_v1_out/cs_ac.png`：非牛市池和全池的净值、回撤
-- `cs_intraday/cs_fw_test_v1_out/cs_fw_test.png`：同一门槛下拆开坐标、锚点、日期和方向
+Decisions are on the hour from 10:00 to 15:00. For a window \(\mathcal{W}_{h}(s)\) ending at the decision bar \(s\),
 
-4.2 这个倍数是在非牛市池上对照过训练和验证之后留下的，验证不是一条事先锁死、再也没看过的样本。测试段仍然没打开。
+$$
+m_{i,s}^{(h)} = \sum_{\tau \in \mathcal{W}_{h}(s)} \varepsilon_{i,\tau} - \operatorname{mean}_{j}\left(\sum_{\tau \in \mathcal{W}_{h}(s)} \varepsilon_{j,\tau}\right).
+$$
 
-按年合计（扣成本，不是年化）：2021 +5.1%，2022 +9.7%，2023 +0.2%，2024 +5.9%，2025 +2.8%。2023 这一年几乎没赚。
+The four windows are the last 6 bars (30 minutes), 12 bars (1 hour), 24 bars (2 hours), and every bar since the previous close. The first bar of the sample is left missing. The mean is across names at that bar.
 
-## 规则
+### Sector anchor
 
-记第 \(i\) 只股票在决策时点 \(s\) 的 5 分钟收益为 \(r\)，当天开盘前已经定好的因子载荷为 \(B\)，公共因子为 \(f\)。残差
+Lagged dollar volume uses the 12 bars ending at \(s-1\), so the split does not see bar \(s\). Inside a sector, names at or above the median of that lagged volume are the fast half \(C_{s}\). Names below it are the slow half \(P_{s}\). A sector with fewer than 4 names is skipped.
 
-\[
-\varepsilon = r - B f
-\]
+The fast anchor of name \(i\) leaves \(i\) out and weights the others by the square root of lagged dollar volume \(v\):
 
-\(B\) 用过去一个季度估计，日内不改。因子维数 \(K = 3\)。
+$$
+a_{i,s}^{C} = \frac{\sum_{j \in C_{s},\, j \neq i} \sqrt{v_{j,s}}\, m_{j,s}}{\sum_{j \in C_{s},\, j \neq i} \sqrt{v_{j,s}}}.
+$$
 
-决策在 10:00 到 15:00 的每个整点。对 30 分钟、1 小时、2 小时、以及昨收到现在这四个窗口，把残差加总并去掉截面均值，得到位移 \(m^{(h)}\)。
+The slow anchor is the same leave-one-out mean with equal weights. If name \(i\) has no other slow peer, \(a_{i,s}^{P}\) falls back to \(a_{i,s}^{C}\). The gaps are
 
-板块内按决策前 12 根 bar 的成交额分成两半。成交额高的一半记为 \(C\)，低的一半记为 \(P\)。锚点 \(a\) 是 \(C\) 里其余股票的位移，按成交额的平方根加权，不含股票自己。偏离 \(g = m - a\)。坐标是 \(-g\) 的截面排名，映射到 \([-1, 1]\)。一行里有效名字少于 20 个就不交易。六个坐标是：相对 \(C\) 的四个窗口、相对 \(P\) 的昨收到现在、以及成交量状态的排名。
+$$
+g_{i,s}^{C} = m_{i,s} - a_{i,s}^{C}, \qquad g_{i,s}^{P} = m_{i,s} - a_{i,s}^{P}.
+$$
 
-每个月用过去 500 个交易日做一次线性回归，截距丢掉。预测的收盘前相对位移记为 \(\mu\)。真实价格低于下限，或者 \(|\mu|\) 没有超过 \(\lambda\) 倍来回成本，就不进持仓。成本按真实价格计算：进场是价差加费用 \((0.01 + 0.0035) / \text{价格}\)，出场只收费用 \(0.0035 / \text{价格}\)。真实价格是复权价除掉该日之后的前复权因子。
+### Coordinates
 
-每个板块至少 5 只股票才交易。正分最高的 20% 做多，负分最低的 20% 做空，两边金额相等，板块之间也相等。一天六个整点的目标仓位各拿六分之一，叠到收盘，收盘清掉。成交晚一根 5 分钟 bar。
+On each decision row, a coordinate is the cross-sectional rank of the negative gap, mapped to \([-1,1]\):
 
-后来的检验里，把“谁在成交额高的那一半”随机重排 12 次再重拟合，训练收益和原来几乎一样（1.89 bp/天对 1.91 bp/天，p = 0.46）。打乱板块标签也一样。等权同伴、不分成两半，训练是 +6.26%/年，并不更差。所以现在赚钱的是当天的相对跌幅和这条成本门槛。成交额高低这个身份、以及板块名字本身，没有再多贡献一块可以单独指出来的收益。
+$$
+u_{i,s} = \frac{2}{n_{s}-1}\operatorname{rank}(-g_{i,s}) - 1.
+$$
 
-## 数据
+If the row has fewer than 20 finite names, the whole row is missing. The six coordinates are
 
-行情从富途 OpenD 下载：5 分钟、前复权、只保留常规交易时段。字段是 `time, open, high, low, close, volume`。单只股票一个 parquet。
+$$
+u^{\mathrm{day},C},\; u^{\mathrm{day},P},\; u^{2\mathrm{h},C},\; u^{1\mathrm{h},C},\; u^{30\mathrm{m},C},\; u^{\mathrm{vol}}.
+$$
 
-| 目录 | 内容 |
+The first five are the four horizons against the fast anchor, plus the since-close gap against the slow anchor. \(u^{\mathrm{vol}}\) is the same rank transform of the negative volume state (the third coordinate of the per-name Kalman state).
+
+### Monthly fit
+
+Let \(\varepsilon_{i,s}^{\mathrm{close}}\) be the residual from the decision to the close, \(\sigma_{i,s}\) the name's bar volatility, and \(\tau_{s}\) the number of bars left until the close. The regression target, on names that pass the price floor, is
+
+$$
+y_{i,s} = \operatorname{clip}\!\left(\frac{\varepsilon_{i,s}^{\mathrm{close}}}{\sigma_{i,s}\sqrt{\tau_{s}}},\,-5,\,5\right).
+$$
+
+Once a month, on the previous 500 trading days only, drop the intercept and solve
+
+$$
+\hat\beta = \arg\min_{\beta}\ \lVert y - U\beta \rVert_{2},
+$$
+
+where the columns of \(U\) are the six coordinates. A scalar \(\alpha\) then matches the fitted mix to the raw relative close-to-close move \(q\) (the name's return to the close, minus the cross-sectional mean) on those same past rows:
+
+$$
+\alpha = \frac{\sum (\hat\beta^{\top} u)\, \sigma\sqrt{\tau}\, q}{\sum \big((\hat\beta^{\top} u)\, \sigma\sqrt{\tau}\big)^{2}}.
+$$
+
+The forecast used by the book is
+
+$$
+\mu_{i,s} = \alpha\, (\hat\beta^{\top} u_{i,s})\, \sigma_{i,s}\sqrt{\tau_{s}}.
+$$
+
+### Cost gate
+
+The real price \(P\) is the forward-adjusted price divided by the product of later split and dividend factors. Costs are charged on \(P\), not on the adjusted price:
+
+$$
+c^{\mathrm{in}} = \frac{0.01 + 0.0035}{P}, \qquad c^{\mathrm{out}} = \frac{0.0035}{P}.
+$$
+
+The entry charge is a one-cent half-spread plus a 0.35-cent fee. The exit is the closing auction, fee only. A name is eligible when \(P \ge P_{\min}\) and
+
+$$
+|\mu_{i,s}| > \lambda \big(c^{\mathrm{in}}_{i,s} + c^{\mathrm{out}}_{i,s}\big).
+$$
+
+\(P_{\min} = 60\) and \(\lambda = 4.2\) on the sector pools below. \(\lambda\) was kept after looking at the non-bull validation, so that pool is not a locked sample. The other pools did not enter the choice.
+
+### Book
+
+A sector is used only if it has at least 5 names. Inside it, let \(k = \lfloor 0.2\, n \rfloor\) with \(k \ge 1\). The long leg is the \(k\) highest eligible scores that are positive. The short leg is the \(k\) lowest eligible scores that are negative. If either leg is empty the sector is flat. Sectors that do trade share one unit of gross capital equally, and each sector's long dollars equal its short dollars. The resulting target \(w_{s}\) satisfies
+
+$$
+\mathbf{1}^{\top} w_{s} = 0, \qquad \lVert w_{s} \rVert_{1} \in \{0, 1\}.
+$$
+
+The six hourly targets of a day are stacked into sleeves. At hour \(j = 1,\ldots,6\),
+
+$$
+h_{j} = \frac{1}{6}\sum_{q=1}^{j} w_{q}.
+$$
+
+The sleeve is applied one 5-minute bar after the decision, and \(h = 0\) overnight. Daily profit is the sum of sleeve times the subsequent return, minus the turnover cost of \(c^{\mathrm{in}}\) on entries and \(c^{\mathrm{out}}\) on exits.
+
+## Null
+
+The null keeps the fitted scores and reassigns them, at that bar, to other names in the same sector. The forecast is rebuilt with the recipient's own \(\sigma\sqrt{\tau}\), and the same price floor and the same \(\lambda\) are applied. Eighty such books are the colored cloud. Blue is the middle of that cloud. Green is the outer edge. The reported \(p\)-value is \((1 + \#\{\text{null} \ge \text{real}\}) / 81\), separately on the train days and the validation days.
+
+| Pool | Train | Train \(p\) | Validation | Validation \(p\) |
+| --- | ---: | ---: | ---: | ---: |
+| Non-bull, 97 names | +4.88%/yr | 0.012 | +4.30%/yr | 0.049 |
+| Financials, energy, industrials, 57 names | +0.01%/yr | 0.30 | −1.39%/yr | 0.91 |
+| Technology, communication, discretionary, 40 names | +3.25%/yr | 0.012 | +5.30%/yr | 0.012 |
+
+The rank signal is present in all three. Mean daily rank correlation of the fitted mix with the residual to the close is +0.032, +0.042 and +0.044. Cross-sectional residual dispersion is about the same. The financials pool fails later in the rule: only 56% of financial and energy names clear \(P \ge 60\), the 4.2 cost gate passes on 2.8% of name-rows (16.9% in the technology pool, where the median real price is about \$230 and the round trip is 0.7 bp), and a sector book exists on only 45% of hours. Gross profit on that pool is already about zero, so the cost is not what removes an otherwise positive book. The non-bull sectors stay thick enough to fill both legs. The technology pool clears the gate often because its round trip is a smaller fraction of price. Figure: `cs_intraday/cs_band_v1_out/cs_band.png`.
+
+Shuffling which names are in the fast half, or shuffling the sector labels, does not remove the non-bull train result. The since-close relative gap and the cost gate are the parts that the book uses. The fast/slow label is not a separate source of profit.
+
+## Data
+
+Bars are 5-minute, regular session, forward-adjusted, one parquet per name, columns `time, open, high, low, close, volume`. Downloaded through Futu OpenD.
+
+| Path | Contents |
 | --- | --- |
-| `cs_intraday/data/5m/` | 标普 100 成分，清单 `universe_sp100.csv`，约 2018-09 至 2026-09 |
-| `cs_intraday/data/5m_flat/` | 后来补的一批板块和落后名字，清单 `universe_flat.csv`，约 2018-11 至 2026-11-06 |
-| `cs_intraday/data/rehab/` | 每只股票的分红拆股事件，用来把复权价换回真实价格 |
-| `cs_intraday/data/splits.json` | 训练、验证、测试的切分 |
-| `cs_intraday/data/manifest.csv` | 标普这一侧的下载记录 |
+| `cs_intraday/data/5m/` | S&P 100 names, `universe_sp100.csv` |
+| `cs_intraday/data/5m_flat/` | Added sector and laggard names, `universe_flat.csv` |
+| `cs_intraday/data/rehab/` | Split and dividend events used to recover \(P\) |
+| `cs_intraday/data/splits.json` | Train, validation, and test cuts |
+| `cs_intraday/data/manifest.csv` | Download record for the S&P side |
 
-切分按 bar 的时间顺序，三段之间空出 60 分钟：
+The cut is chronological by bar, with a 60-minute embargo between pieces.
 
-- 训练结束：2025-02-14 11:10
-- 验证：2025-02-14 12:15 至 2025-12-03 10:30
-- 测试从 2025-12-03 11:35 开始，脚本读数据时会在验证结束日之前截断
+- Train ends 2025-02-14 11:10
+- Validation: 2025-02-14 12:15 through 2025-12-03 10:30
+- Test starts 2025-12-03 11:35. Loaders drop every bar on or after the validation end date.
 
-`data/5m_all/` 不在仓库里。第一次运行会把上面两个行情目录硬链接到这里，并重写 `universe_all.csv`。历史长度不到训练段 90% 的名字不会进入面板，以前因此丢掉过 GEV、PLTR、RTX、SNDK。
+`data/5m_all/` is not in the repository. The first run hard-links the two bar directories into it and rewrites `universe_all.csv`. Names with train coverage under 90% of the best name are dropped (GEV, PLTR, RTX, SNDK). EQR and AVB have no parquet.
 
-EQR、AVB 在富途里没有 K 线，清单里记着失败，没有 parquet。
-
-## 运行
+## Run
 
 ```bash
 pip install -r requirements.txt
 cd cs_intraday
 python cs_ac_v1.py
 python cs_fw_test_v1.py
+python cs_band_v1.py
 ```
 
-两条都会重算净值，各需要几分钟。图和 `metrics.json` 写到各自的 `*_out` 目录。重新下载行情才需要本机的富途 OpenD，已有 parquet 时不用打开它。
+Each script rewrites its figure and `metrics.json` under the matching `*_out` directory. OpenD is required only to download bars again.
+
+- `cs_intraday/cs_ac_v1_out/cs_ac.png` — equity of the non-bull pool and of the full 194-name panel
+- `cs_intraday/cs_fw_test_v1_out/cs_fw_test.png` — coordinates, anchor, lag, and sign, at the same gate
+- `cs_intraday/cs_band_v1_out/cs_band.png` — the reassignment cloud on the three pools
